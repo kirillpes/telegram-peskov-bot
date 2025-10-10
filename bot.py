@@ -2,13 +2,14 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import sqlite3
-from datetime import datetime
+from datetime import datetime, time
 import os
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 IMAGE_URL = 'https://i.ibb.co/d0rnQ1Rq/Frame-625.jpg'
+ADMIN_ID = 41879842  # Ваш Telegram ID
 
 def init_db():
     conn = sqlite3.connect('bot_users.db')
@@ -55,34 +56,29 @@ def mark_guide_requested(user_id):
     conn.commit()
     conn.close()
 
+def get_stats():
+    conn = sqlite3.connect('bot_users.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT COUNT(*) FROM users')
+    total_users = cursor.fetchone()[0]
+    
+    cursor.execute('SELECT COUNT(*) FROM users WHERE requested_guide = 1')
+    guide_users = cursor.fetchone()[0]
+    
+    cursor.execute('SELECT SUM(guide_request_count) FROM users')
+    total_requests = cursor.fetchone()[0] or 0
+    
+    conn.close()
+    
+    return {
+        'total_users': total_users,
+        'guide_users': guide_users,
+        'total_requests': total_requests
+    }
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     add_or_update_user(user.id, user.username, user.first_name, user.last_name)
     await update.message.reply_text(
-        f'привет, {user.first_name}! 👋\n\nнапиши «гайд» чтобы получить ссылку на руководство.'
-    )
-
-async def send_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    add_or_update_user(user.id, user.username, user.first_name, user.last_name)
-    mark_guide_requested(user.id)
-    
-    message_text = (
-        "держи ссылку на гайд:\n"
-        "https://peskov.notion.site/n8n-28086446fff38053a53ddb47634c41d3?pvs=74\n\n"
-        "любыме идея и предложениям после прочтения не стесняйся "
-        "адресовать кириллу: @kirillpeskov"
-    )
-    
-    await update.message.reply_photo(photo=IMAGE_URL, caption=message_text)
-
-def main():
-    init_db()
-    application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.Regex(r'(?i)^["\']?гайд["\']?$'), send_guide))
-    logging.info("Бот запущен!")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
-
-if __name__ == '__main__':
-    main()
+        f'Привет, {use
