@@ -4,6 +4,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import sqlite3
 from datetime import datetime, time
 import os
+from openpyxl import Workbook
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -95,6 +96,43 @@ async def send_database(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Ошибка при отправке базы: {e}")
         logging.error(f"Ошибка отправки базы: {e}")
 
+async def send_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if user.id != ADMIN_ID:
+        await update.message.reply_text("⛔️ У вас нет доступа к этой команде")
+        return
+    
+    try:
+        conn = sqlite3.connect('bot_users.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT user_id, username, first_name, last_name, first_interaction, requested_guide, guide_request_count, last_guide_request FROM users ORDER BY first_interaction DESC')
+        rows = cursor.fetchall()
+        conn.close()
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Users"
+        
+        headers = ['User ID', 'Username', 'Имя', 'Фамилия', 'Первое взаимодействие', 'Запросил гайд', 'Количество запросов', 'Последний запрос гайда']
+        ws.append(headers)
+        
+        for row in rows:
+            ws.append(row)
+        
+        filename = f"bot_users_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        wb.save(filename)
+        
+        stats = get_stats()
+        caption = f"📊 База пользователей в Excel\n\n👥 Всего: {stats['total_users']}\n✅ Запросили гайд: {stats['guide_users']}\n📈 Всего запросов: {stats['total_requests']}"
+        
+        with open(filename, 'rb') as excel_file:
+            await update.message.reply_document(document=excel_file, filename=filename, caption=caption)
+        
+        logging.info(f"Excel файл отправлен админу {user.id}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка при создании Excel: {e}")
+        logging.error(f"Ошибка создания Excel: {e}")
+
 async def daily_backup(context: ContextTypes.DEFAULT_TYPE):
     stats = get_stats()
     try:
@@ -110,6 +148,7 @@ def main():
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("getdb", send_database))
+    application.add_handler(CommandHandler("getexcel", send_excel))
     application.add_handler(MessageHandler(filters.Regex(r'(?i)^["\']?гайд["\']?$'), send_guide))
     job_queue = application.job_queue
     job_queue.run_daily(daily_backup, time=time(hour=12, minute=0))
