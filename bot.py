@@ -59,7 +59,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     add_or_update_user(user.id, user.username, user.first_name, user.last_name)
     await update.message.reply_text(
-        f'Привет, {user.first_name}! 👋\n\nНапиши "гайд" чтобы получить ссылку на руководство.'
+        f'привет, {user.first_name}! 👋\n\nнапиши «гайд» чтобы получить ссылку на руководство.'
     )
 
 async def send_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -80,7 +80,7 @@ def main():
     init_db()
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.Regex(r'(?i)^гайд$'), send_guide))
+application.add_handler(MessageHandler(filters.Regex(r'(?i)^["\']?гайд["\']?$'), send_guide))
     logging.info("Бот запущен!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
