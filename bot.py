@@ -6,7 +6,7 @@ from datetime import datetime
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-BOT_TOKEN = '8387448718:AAE6tEB2wHLljx8Wva0dKeMuK-i6IPGj_sA'
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
 IMAGE_URL = 'https://i.ibb.co/d0rnQ1Rq/Frame-625.jpg'
 
 def init_db():
