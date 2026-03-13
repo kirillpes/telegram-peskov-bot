@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  katycut:
+    build: ./katycut
+    container_name: katycut
+    restart: unless-stopped
+    env_file:
+      - ./katycut/.env
+    volumes:
+      - ./katycut/src:/app/src
